@@ -42,13 +42,4 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
-
-    public void save(View view){
-
-    }
-
-    public void selectImage(View view){
-
-    }
-
 }
