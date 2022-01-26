@@ -12,9 +12,11 @@ import android.Manifest;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageDecoder;
 import android.net.Uri;
 import android.os.Build;
@@ -47,6 +49,46 @@ public class ArtActivity extends AppCompatActivity {
         setContentView(view);
 
         registerLauncher();
+
+        database = this.openOrCreateDatabase("Arts", MODE_PRIVATE,null);
+
+        Intent intent = getIntent();
+        String info = intent.getStringExtra("info");
+
+        if (info.equals("new")){
+            //new art
+            binding.editTextName.setText("");
+            binding.editTextArtist.setText("");
+            binding.editTextYear.setText("");
+            binding.button.setVisibility(View.VISIBLE);
+            binding.imageView.setImageResource(R.drawable.selectimage);
+        }else{
+            int artId = intent.getIntExtra("artId",0);
+            binding.button.setVisibility(View.INVISIBLE);
+
+            try {
+                Cursor cursor = database.rawQuery("SELECT * FROM arts WHERE id = ?", new String[] {String.valueOf(artId)});
+                int artNameIx = cursor.getColumnIndex("artname");
+                int painterNameIx = cursor.getColumnIndex("paintername");
+                int yearIx = cursor.getColumnIndex("year");
+                int imageIx = cursor.getColumnIndex("image");
+
+                while(cursor.moveToNext()){
+                    binding.editTextName.setText(cursor.getString(artNameIx));
+                    binding.editTextArtist.setText(cursor.getString(painterNameIx));
+                    binding.editTextYear.setText(cursor.getString(yearIx));
+
+                    byte[] bytes = cursor.getBlob(imageIx);
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes,0,bytes.length);
+                    binding.imageView.setImageBitmap(bitmap);
+                }
+                cursor.close();
+
+
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+        }
     }
 
     public Bitmap makeSmallerImage(Bitmap image, int maksimumSize){
@@ -80,7 +122,6 @@ public class ArtActivity extends AppCompatActivity {
         byte[] byteArray = outputStream.toByteArray();
 
         try {
-            database = this.openOrCreateDatabase("Arts", MODE_PRIVATE,null);
             database.execSQL("CREATE TABLE IF NOT EXISTS arts (id INTEGER PRIMARY KEY, artname VARCHAR, paintername VARCHAR,year VARCHAR, image BLOB)");
 
             String sqlString = "INSERT INTO arts (artname, paintername, year, image) VALUES (?,?,?,?)";
